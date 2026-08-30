@@ -6,6 +6,18 @@ export async function hasExistingData(): Promise<boolean> {
   return count > 0;
 }
 
+/**
+ * Clean default startup: Starts fresh with zero demo providers.
+ */
+export async function checkAndSeedDatabase(): Promise<boolean> {
+  // Production default: do not auto-seed demo records.
+  // The dairy register starts clean and fresh for real shop use.
+  return false;
+}
+
+/**
+ * Optional demo loader for practice/testing if explicitly clicked in settings.
+ */
 export async function populateDemoData(): Promise<boolean> {
   console.log('Loading realistic demo dairy data...');
   await resetDatabaseAll();
@@ -173,58 +185,16 @@ export async function populateDemoData(): Promise<boolean> {
     });
   }
 
-  // Finalize Period 2
-  for (let idx = 0; idx < createdProviders.length; idx++) {
-    const p = createdProviders[idx];
-    const s2Id = generateId();
-    const s2Litres = 140.0;
-    const s2Amount = calculateAmount(s2Litres, p.default_rate);
-
-    await db.settlements.add({
-      id: s2Id,
-      provider_id: p.id,
-      year: 2026,
-      month: 8,
-      period_index: 2,
-      period_start: '2026-08-11',
-      period_end: '2026-08-20',
-      total_litres: s2Litres,
-      total_amount: s2Amount,
-      status: 'FINALIZED',
-      finalized_at: '2026-08-21T10:00:00.000Z'
-    });
-
-    if (idx % 2 === 0) {
-      await db.payments.add({
-        id: generateId(),
-        settlement_id: s2Id,
-        provider_id: p.id,
-        amount_paid: s2Amount,
-        paid_at: '2026-08-22T11:00:00.000Z',
-        payment_method: 'UPI',
-        notes: 'Paid via PhonePe UPI',
-        status: 'PAID'
-      });
-    }
-  }
-
   await db.audit_logs.add({
     id: generateId(),
     entity_type: 'PROVIDER',
     entity_id: 'demo-init',
     action: 'CREATE',
     old_value: null,
-    new_value: { message: 'Demo dairy loaded with 8 sample providers' },
+    new_value: { message: 'Demo dairy loaded with sample providers' },
     reason: 'Loaded sample data for initial demonstration',
     timestamp: '2026-08-01T06:00:00.000Z'
   });
 
   return true;
-}
-
-export async function checkAndSeedDatabase(): Promise<boolean> {
-  const hasData = await hasExistingData();
-  if (hasData) return false;
-  // If first time, load demo data so app is immediately interactive
-  return await populateDemoData();
 }
